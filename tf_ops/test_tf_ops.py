@@ -4,7 +4,7 @@ import time
 from tf_grouping import query_ball_point, group_point, knn_point
 from tf_interpolate import three_nn, three_interpolate
 from tf_sampling import prob_sample, farthest_point_sample, gather_point
-
+tf.compat.v1.disable_eager_execution() 
 
 class TestGrouping(tf.test.TestCase):
     def test(self):
@@ -27,7 +27,7 @@ class TestGrouping(tf.test.TestCase):
                 grouped_points = group_point(points, idx)
                 # grouped_points_grad = tf.ones_like(grouped_points)
                 # points_grad = tf.gradients(grouped_points, points, grouped_points_grad)
-        with tf.Session("") as sess:
+        with tf.compat.v1.Session("") as sess:
             now = time.time()
             for _ in range(100):
                 ret = sess.run(grouped_points)
@@ -49,7 +49,7 @@ class TestGrouping(tf.test.TestCase):
 
         with self.test_session():
             print("---- Going to compute gradient error")
-            err = tf.test.compute_gradient_error(
+            err = tf.compat.v1.test.compute_gradient_error(
                 points, (1, 128, 16), grouped_points, (1, 8, 32, 16)
             )
             print(err)
@@ -69,7 +69,7 @@ class TestInterpolate(tf.test.TestCase):
             dist, idx = three_nn(xyz1, xyz2)
             weight = tf.ones_like(dist) / 3.0
             interpolated_points = three_interpolate(points, idx, weight)
-        with tf.Session("") as sess:
+        with tf.compat.v1.Session("") as sess:
             now = time.time()
             for _ in range(100):
                 ret = sess.run(interpolated_points)
@@ -87,7 +87,7 @@ class TestInterpolate(tf.test.TestCase):
             weight = tf.ones_like(dist) / 3.0
             interpolated_points = three_interpolate(points, idx, weight)
             print(interpolated_points)
-            err = tf.test.compute_gradient_error(
+            err = tf.compat.v1.test.compute_gradient_error(
                 points, (1, 8, 16), interpolated_points, (1, 128, 16)
             )
             print(err)
@@ -104,7 +104,7 @@ class TestSampling(tf.test.TestCase):
             trib = inp[:, :, 1, :]
             tric = inp[:, :, 2, :]
             areas = tf.sqrt(
-                tf.reduce_sum(tf.cross(trib - tria, tric - tria) ** 2, 2) + 1e-9
+                tf.reduce_sum(tf.sparse.cross(trib - tria, tric - tria) ** 2, 2) + 1e-9
             )
             randomnumbers = tf.random_uniform((1, 8192))
             triids = prob_sample(areas, randomnumbers)
