@@ -87,7 +87,7 @@ def get_learning_rate(batch):
         scalar tf.Tensor: the decayed learning rate
     """
 
-    learning_rate = tf.train.exponential_decay(
+    learning_rate = tf.compat.v1.train.exponential_decay(
         PARAMS["learning_rate"],  # Base learning rate.
         batch * PARAMS["batch_size"],  # Current index into the dataset.
         PARAMS["decay_step"],  # Decay step.
@@ -108,7 +108,7 @@ def get_bn_decay(batch):
         scalar tf.Tensor: the batch norm decay
     """
 
-    bn_momentum = tf.train.exponential_decay(
+    bn_momentum = tf.compat.v1.train.exponential_decay(
         PARAMS["bn_init_decay"],
         batch * PARAMS["batch_size"],
         float(PARAMS["decay_step"]),
@@ -225,23 +225,26 @@ def train_one_epoch(sess, ops, train_writer, stack):
         batch_data, batch_label, batch_weights = stack.get()
 
         # Get predicted labels
-        feed_dict = {
+        feed_dict2 = {
             ops["pointclouds_pl"]: batch_data,
             ops["labels_pl"]: batch_label,
             ops["smpws_pl"]: batch_weights,
             ops["is_training_pl"]: is_training,
         }
-        summary, step, _, loss_val, pred_val, _ = sess.run(
+        
+        print(ops)
+
+        summary, step, loss_val, pred_val, _ = sess.run(
             [
-                ops["merged"],
+               # ops["merged"],
                 ops["step"],
                 ops["train_op"],
                 ops["loss"],
                 ops["pred"],
                 ops["update_iou"],
             ],
-            feed_dict=feed_dict,
-        )
+            feed_dict = feed_dict2
+	    )
         train_writer.add_summary(summary, step)
         pred_val = np.argmax(pred_val, 2)
 
@@ -340,7 +343,7 @@ def train():
             pointclouds_pl, labels_pl, smpws_pl = model.get_placeholders(
                 PARAMS["num_point"], hyperparams=PARAMS
             )
-            is_training_pl = tf.placeholder(tf.bool, shape=())
+            is_training_pl = tf.compat.v1.placeholder(tf.bool, shape=())
 
             # Note the global_step=batch parameter to minimize.
             # That tells the optimizer to helpfully increment the 'batch' parameter for
@@ -362,17 +365,17 @@ def train():
             tf.summary.scalar("loss", loss)
 
             # Compute accuracy
-            correct = tf.equal(tf.argmax(pred, 2), tf.to_int64(labels_pl))
+            correct = tf.equal(tf.argmax(pred, 2), tf.compat.v1.to_int64(labels_pl))
             accuracy = tf.reduce_sum(tf.cast(correct, tf.float32)) / float(
                 PARAMS["batch_size"] * PARAMS["num_point"]
             )
             tf.summary.scalar("accuracy", accuracy)
 
             # Computer mean intersection over union
-            mean_intersection_over_union, update_iou_op = tf.metrics.mean_iou(
-                tf.to_int32(labels_pl), tf.to_int32(tf.argmax(pred, 2)), NUM_CLASSES
+            mean_intersection_over_union, update_iou_op = tf.compat.v1.metrics.mean_iou(
+                tf.compat.v1.to_int32(labels_pl), tf.compat.v1.to_int32(tf.argmax(pred, 2)), NUM_CLASSES
             )
-            tf.summary.scalar("mIoU", tf.to_float(mean_intersection_over_union))
+            tf.summary.scalar("mIoU", tf.compat.v1.to_float(mean_intersection_over_union))
 
             print("--- Get training operator")
             # Get training operator
@@ -384,31 +387,31 @@ def train():
                 )
             else:
                 assert PARAMS["optimizer"] == "adam"
-                optimizer = tf.train.AdamOptimizer(learning_rate)
+                optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate)
             train_op = optimizer.minimize(loss, global_step=batch)
 
             # Add ops to save and restore all the variables.
-            saver = tf.train.Saver()
+            saver = tf.compat.v1.train.Saver()
 
         # Create a session
-        config = tf.ConfigProto()
+        config = tf.compat.v1.ConfigProto()
         config.gpu_options.allow_growth = True
         config.allow_soft_placement = True
         config.log_device_placement = False
-        sess = tf.Session(config=config)
+        sess = tf.compat.v1.Session(config=config)
 
         # Add summary writers
-        merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(
+        merged = tf.compat.v1.summary.merge_all()
+        train_writer = tf.compat.v1.summary.FileWriter(
             os.path.join(PARAMS["logdir"], "train"), sess.graph
         )
-        validation_writer = tf.summary.FileWriter(
+        validation_writer = tf.compat.v1.summary.FileWriter(
             os.path.join(PARAMS["logdir"], "validation"), sess.graph
         )
 
         # Init variables
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())  # important for mIoU
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())  # important for mIoU
 
         ops = {
             "pointclouds_pl": pointclouds_pl,

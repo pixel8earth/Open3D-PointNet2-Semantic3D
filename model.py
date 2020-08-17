@@ -11,11 +11,11 @@ from util.pointnet_util import pointnet_sa_module, pointnet_fp_module
 
 def get_placeholders(num_point, hyperparams):
     feature_size = 3 * int(hyperparams["use_color"])
-    pointclouds_pl = tf.placeholder(
+    pointclouds_pl = tf.compat.v1.placeholder(
         tf.float32, shape=(None, num_point, 3 + feature_size)
     )
-    labels_pl = tf.placeholder(tf.int32, shape=(None, num_point))
-    smpws_pl = tf.placeholder(tf.float32, shape=(None, num_point))
+    labels_pl = tf.compat.v1.placeholder(tf.int32, shape=(None, num_point))
+    smpws_pl = tf.compat.v1.placeholder(tf.float32, shape=(None, num_point))
     return pointclouds_pl, labels_pl, smpws_pl
 
 
@@ -153,9 +153,9 @@ def get_loss(pred, label, smpw, end_points):
     """ pred: BxNxC, #one score per class per batch element (N is the nb of points)
         label: BxN,  #one label per batch element
 	smpw: BxN """
-    classify_loss = tf.losses.sparse_softmax_cross_entropy(
+    classify_loss = tf.compat.v1.losses.sparse_softmax_cross_entropy(
         labels=label, logits=pred, weights=smpw
     )
     tf.summary.scalar("classify loss", classify_loss)
-    tf.add_to_collection("losses", classify_loss)
+    tf.compat.v1.add_to_collection("losses", classify_loss)
     return classify_loss

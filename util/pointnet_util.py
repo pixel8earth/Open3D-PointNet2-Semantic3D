@@ -132,7 +132,7 @@ def pointnet_sa_module(
             idx: (batch_size, npoint, nsample) int32 -- indices for local regions
     """
     data_format = "NCHW" if use_nchw else "NHWC"
-    with tf.variable_scope(scope) as sc:
+    with tf.compat.v1.variable_scope(scope) as sc:
         # Sample and Grouping
         if group_all:
             nsample = xyz.get_shape()[1].value
@@ -173,7 +173,7 @@ def pointnet_sa_module(
                 new_points, axis=[2], keepdims=True, name="avgpool"
             )
         elif pooling == "weighted_avg":
-            with tf.variable_scope("weighted_avg"):
+            with tf.compat.v1.variable_scope("weighted_avg"):
                 dists = tf.norm(grouped_xyz, axis=-1, ord=2, keepdims=True)
                 exp_dists = tf.exp(-dists * 5)
                 weights = exp_dists / tf.reduce_sum(
@@ -295,7 +295,7 @@ def pointnet_fp_module(
         Return:
             new_points: (batch_size, ndataset1, mlp[-1]) TF tensor
     """
-    with tf.variable_scope(scope) as sc:
+    with tf.compat.v1.variable_scope(scope) as sc:
         dist, idx = three_nn(xyz1, xyz2)
         dist = tf.maximum(dist, 1e-10)
         norm = tf.reduce_sum((1.0 / dist), axis=2, keepdims=True)
