@@ -5,7 +5,8 @@
 import os
 import sys
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tf_ops.tf_interpolate import three_nn, three_interpolate
 from tf_ops.tf_grouping import query_ball_point, group_point, knn_point
 from tf_ops.tf_sampling import farthest_point_sample, gather_point
