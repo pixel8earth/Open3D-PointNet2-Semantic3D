@@ -4,7 +4,8 @@ import sys
 ROOT_DIR = os.path.abspath(os.path.pardir)
 sys.path.append(ROOT_DIR)
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import util.tf_util as tf_util
 from util.pointnet_util import pointnet_sa_module, pointnet_fp_module
 
