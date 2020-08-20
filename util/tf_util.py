@@ -41,7 +41,7 @@ def _variable_with_weight_decay(name, shape, stddev, wd, use_xavier=True):
     Variable Tensor
   """
     if use_xavier:
-        initializer = tf.contrib.layers.xavier_initializer()
+        initializer = tf.Variable(tf.initializers.glorot_uniform()(shape=shape))
     else:
         initializer = tf.truncated_normal_initializer(stddev=stddev)
     var = _variable_on_cpu(name, shape, initializer)
@@ -107,7 +107,7 @@ def conv1d(
             inputs, kernel, stride=stride, padding=padding, data_format=data_format_1d
         )
         biases = _variable_on_cpu(
-            "biases", [num_output_channels], tf.constant_initializer(0.0)
+            "biases", [num_output_channels], tf.constant_initializer(value = 0.0)
         )
         outputs = tf.nn.bias_add(outputs, biases, data_format=data_format)
 
@@ -162,7 +162,7 @@ def conv2d(
   Returns:
     Variable tensor
   """
-    with tf.variable_scope(scope) as sc:
+    with tf.compat.v1.variable_scope(scope) as sc:
         kernel_h, kernel_w = kernel_size
         assert data_format == "NHWC" or data_format == "NCHW"
         if data_format == "NHWC":
