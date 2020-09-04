@@ -5,8 +5,8 @@ Date: November 2017
 """
 
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
+
 
 def _variable_on_cpu(name, shape, initializer, use_fp16=False):
     """Helper to create a Variable stored on CPU memory.
@@ -19,7 +19,7 @@ def _variable_on_cpu(name, shape, initializer, use_fp16=False):
   """
     with tf.device("/cpu:0"):
         dtype = tf.float16 if use_fp16 else tf.float32
-        var = tf.get_variable(name, shape, initializer=initializer, dtype=dtype)
+        var = tf.compat.v1.get_variable(name, shape, initializer=initializer, dtype=dtype)
     return var
 
 
@@ -41,7 +41,7 @@ def _variable_with_weight_decay(name, shape, stddev, wd, use_xavier=True):
     Variable Tensor
   """
     if use_xavier:
-        initializer = tf.Variable(tf.initializers.glorot_uniform()(shape=shape))
+        initializer = tf.compat.v1.keras.initializers.glorot_normal()
     else:
         initializer = tf.truncated_normal_initializer(stddev=stddev)
     var = _variable_on_cpu(name, shape, initializer)
@@ -88,12 +88,12 @@ def conv1d(
   Returns:
     Variable tensor
   """
-    with tf.variable_scope(scope) as sc:
+    with tf.compat.v1.variable_scope(scope) as sc:
         assert data_format == "NHWC" or data_format == "NCHW"
         if data_format == "NHWC":
-            num_in_channels = inputs.get_shape()[-1].value
+            num_in_channels = inputs.get_shape()[-1]
         else:
-            num_in_channels = inputs.get_shape()[1].value
+            num_in_channels = inputs.get_shape()[1]
         kernel_shape = [kernel_size, num_in_channels, num_output_channels]
         kernel = _variable_with_weight_decay(
             "weights",
@@ -107,7 +107,7 @@ def conv1d(
             inputs, kernel, stride=stride, padding=padding, data_format=data_format_1d
         )
         biases = _variable_on_cpu(
-            "biases", [num_output_channels], tf.constant_initializer(value = 0.0)
+            "biases", [num_output_channels], tf.constant_initializer(0.0)
         )
         outputs = tf.nn.bias_add(outputs, biases, data_format=data_format)
 
@@ -166,7 +166,7 @@ def conv2d(
         kernel_h, kernel_w = kernel_size
         assert data_format == "NHWC" or data_format == "NCHW"
         if data_format == "NHWC":
-            num_in_channels = inputs.get_shape()[-1].value
+            num_in_channels = inputs.get_shape()[-1]
         elif data_format == "NCHW":
             num_in_channels = inputs.get_shape()[1].value
         kernel_shape = [kernel_h, kernel_w, num_in_channels, num_output_channels]
@@ -569,15 +569,15 @@ def batch_norm_template(
       normed:        batch-normalized maps
   """
     bn_decay = bn_decay if bn_decay is not None else 0.9
-    return tf.contrib.layers.batch_norm(
+    return tf.compat.v1.layers.batch_normalization(
         inputs,
         center=True,
         scale=True,
-        is_training=is_training,
-        decay=bn_decay,
-        updates_collections=None,
-        scope=scope,
-        data_format=data_format,
+       # is_training=is_training,
+       # decay=bn_decay,
+#        updates_collections=None,
+       # scope=scope,
+#        data_format=data_format,
     )
 
 
@@ -656,7 +656,7 @@ def dropout(inputs, is_training, scope, keep_prob=0.5, noise_shape=None):
   Returns:
     tensor variable
   """
-    with tf.variable_scope(scope) as sc:
+    with tf.compat.v1.variable_scope(scope) as sc:
         outputs = tf.cond(
             is_training,
             lambda: tf.nn.dropout(inputs, keep_prob, noise_shape),
